@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lecteur vidéo local — vitesses & raccourcis</title>
+<style>
+  :root { --bg:#0f1221; --card:#171a2c; --text:#e8eaf6; --muted:#a3acc5; --accent:#7aa2ff; --accent2:#9ae6b4; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:linear-gradient(180deg,#0c1020,#0f1221 30%,#0f1221); color:var(--text); }
+  .wrap { max-width: 900px; margin: 24px auto; padding: 16px; }
+  .player { background:var(--card); border:1px solid #232640; border-radius:16px; overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .video-area { position:relative; background:#000; }
+  video { width:100%; display:block; aspect-ratio:16/9; background:#000; }
+  .controls { display:flex; gap:10px; align-items:center; padding:12px; border-top:1px solid #232640; flex-wrap:wrap; }
+  button, .file-label {
+    background:#212545; color:var(--text); border:1px solid #2a305a; padding:10px 14px; border-radius:10px;
+    cursor:pointer; transition: transform .04s ease, background .2s ease, border-color .2s ease;
+    font-weight:600;
+  }
+  button:hover, .file-label:hover { background:#2a305a; transform: translateY(-1px); }
+  button:active, .file-label:active { transform: translateY(0); }
+  .file-label { display:inline-flex; align-items:center; gap:8px; }
+  input[type="file"]{ display:none; }
+  .grow { flex:1 1 220px; min-width:220px; }
+  .timebar { display:flex; align-items:center; gap:10px; width:100%; }
+  .time { font-variant-numeric: tabular-nums; color:var(--muted); min-width:max(112px,7ch); text-align:center; }
+  .rate { color:var(--accent2); font-weight:700; }
+  /* Slider (barre de progression) */
+  input[type="range"]{ appearance:none; width:100%; height:10px; background:transparent; cursor:pointer; }
+  input[type="range"]::-webkit-slider-runnable-track{
+    height:10px; background:linear-gradient(90deg, var(--accent) var(--fill,0%), #333a66 var(--fill,0%));
+    border-radius:999px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    appearance:none; width:18px; height:18px; margin-top:-4px; border-radius:50%;
+    background:#fff; border:2px solid var(--accent); box-shadow:0 0 0 4px rgba(122,162,255,.2);
+  }
+  input[type="range"]::-moz-range-track{
+    height:10px; background:#333a66; border-radius:999px;
+  }
+  input[type="range"]::-moz-range-progress{
+    height:10px; background:var(--accent); border-radius:999px;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--accent);
+  }
+  .row { display:flex; gap:10px; align-items:center; width:100%; }
+  .hint { color:var(--muted); font-size:14px; padding:10px 12px; line-height:1.35; }
+  .kbd { background:#1f2444; border:1px solid #2c356a; padding:2px 6px; border-radius:6px; font-weight:700; }
+  .pill { background:#1c2040; border:1px solid #2a305a; padding:6px 10px; border-radius:999px; color:var(--muted);}
+  .spacer { flex:1; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 style="margin:0 0 10px 4px; font-size:24px;">🎬 Lecteur vidéo local</h1>
+    <div class="player">
+      <div class="video-area" id="videoArea">
+        <video id="vid" preload="metadata" playsinline></video>
+      </div>
+      <div class="controls">
+        <label class="file-label" title="Ouvrir un fichier vidéo">
+          <input id="file" type="file" accept="video/*" />
+          📂 Ouvrir une vidéo
+        </label>
+
+        <button id="playBtn" title="Lecture/Pause (Espace)">▶️ Lecture</button>
+        <button id="rewind10" title="Reculer 10s">⏪ −10s</button>
+        <button id="forward10" title="Avancer 10s">⏩ +10s</button>
+
+        <div class="spacer"></div>
+
+        <button id="rate08" title="Vitesse 0,8×">0,8×</button>
+        <button id="rate20" title="Vitesse 2× (B)">2×</button>
+        <button id="rate10" title="Vitesse normale 1×">1×</button>
+        <button id="fsBtn" title="Plein écran">⛶ Plein écran</button>
+
+        <div class="row">
+          <div class="timebar grow">
+            <span id="tCur" class="time">00:00</span>
+            <input id="seek" type="range" min="0" max="1000" value="0" step="1" />
+            <span id="tDur" class="time">00:00</span>
+          </div>
+        </div>
+
+        <div class="row" style="gap:14px;">
+          <span class="pill">Vitesse actuelle : <span id="rate" class="rate">1,00×</span></span>
+          <span class="pill">Écoulé (réel) : <span id="realElapsed" class="rate">00:00</span></span>
+          <span class="pill">Restant (réel) : <span id="realRemain" class="rate">00:00</span></span>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="hint">
+      Raccourcis clavier : <span class="kbd">Espace</span> lecture/pause ·
+      <span class="kbd">B</span> = 2× · <span class="kbd">0,8</span> bouton dédié ·
+      <span class="kbd">←/→</span> ±5s · <span class="kbd">F</span> plein écran ·
+      Double-clic sur la vidéo : basculer plein écran.
+    </p>
+  </div>
+
+<script>
+  const vid = document.getElementById('vid');
+  const file = document.getElementById('file');
+  const playBtn = document.getElementById('playBtn');
+  const seek = document.getElementById('seek');
+  const tCur = document.getElementById('tCur');
+  const tDur = document.getElementById('tDur');
+  const rateLabel = document.getElementById('rate');
+  const rate08 = document.getElementById('rate08');
+  const rate20 = document.getElementById('rate20');
+  const rate10 = document.getElementById('rate10');
+  const fsBtn = document.getElementById('fsBtn');
+  const realElapsed = document.getElementById('realElapsed');
+  const realRemain  = document.getElementById('realRemain');
+  const videoArea = document.getElementById('videoArea');
+
+  let userSeekLock = false; // évite les conflits pendant le glisser
+
+  function fmt(s){
+    if (!isFinite(s) || s < 0) s = 0;
+    const h = Math.floor(s/3600);
+    const m = Math.floor((s%3600)/60);
+    const sec = Math.floor(s%60);
+    const mm = m.toString().padStart(2,'0');
+    const ss = sec.toString().padStart(2,'0');
+    return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  }
+
+  function setRate(r){
+    // borne raisonnable
+    r = Math.max(.07, Math.min(16, r));
+    vid.playbackRate = r;
+    // Affichage FR avec virgule
+    rateLabel.textContent = r.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '×';
+    updateTimes(); // met à jour les temps "réels"
+  }
+
+  // Charger un fichier local
+  file.addEventListener('change', () => {
+    const f = file.files?.[0];
+    if(!f) return;
+    const url = URL.createObjectURL(f);
+    vid.src = url;
+    vid.playbackRate = 1.0;
+    rateLabel.textContent = '1,00×';
+    vid.play().catch(()=>{}); // certains navigateurs exigent une interaction utilisateur
+  });
+
+  // Lecture/Pause
+  function togglePlay(){
+    if(!vid.src) return;
+    if (vid.paused) { vid.play(); }
+    else { vid.pause(); }
+    playBtn.textContent = vid.paused ? '▶️ Lecture' : '⏸️ Pause';
+  }
+  playBtn.addEventListener('click', togglePlay);
+  vid.addEventListener('play', ()=> playBtn.textContent = '⏸️ Pause');
+  vid.addEventListener('pause', ()=> playBtn.textContent = '▶️ Lecture');
+
+  // Recul/Avance
+  document.getElementById('rewind10').addEventListener('click', ()=> { vid.currentTime = Math.max(0, vid.currentTime - 10); });
+  document.getElementById('forward10').addEventListener('click', ()=> { vid.currentTime = Math.min(vid.duration||0, vid.currentTime + 10); });
+
+  // Vitesse
+  rate08.addEventListener('click', ()=> setRate(0.8));
+  rate20.addEventListener('click', ()=> setRate(2.0));
+  rate10.addEventListener('click', ()=> setRate(1.0));
+
+  // Plein écran
+  function toggleFullscreen(){
+    if (!document.fullscreenElement) {
+      (videoArea.requestFullscreen ? videoArea.requestFullscreen() : videoArea.webkitRequestFullscreen?.());
+    } else {
+      (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.());
+    }
+  }
+  fsBtn.addEventListener('click', toggleFullscreen);
+  vid.addEventListener('dblclick', toggleFullscreen);
+
+  // Barre de progression
+  function updateSeekBar(){
+    if (!vid.duration) return;
+    const value = Math.round( (vid.currentTime / vid.duration) * 1000 );
+    if (!userSeekLock) {
+      seek.value = value.toString();
+      // Remplissage visuel (Chrome/Edge)
+      const fill = (value/10).toFixed(1) + '%';
+      seek.style.setProperty('--fill', fill);
+    }
+  }
+
+  seek.addEventListener('input', ()=>{
+    userSeekLock = true;
+    const frac = Number(seek.value)/1000;
+    // mise à jour visuelle immédiate
+    const fill = (frac*100).toFixed(1) + '%';
+    seek.style.setProperty('--fill', fill);
+    tCur.textContent = fmt(frac * (vid.duration||0));
+  });
+  seek.addEventListener('change', ()=>{
+    const frac = Number(seek.value)/1000;
+    vid.currentTime = (vid.duration||0) * frac;
+    userSeekLock = false;
+  });
+  ['timeupdate','durationchange','loadedmetadata'].forEach(ev=>{
+    vid.addEventListener(ev, ()=>{
+      tCur.textContent = fmt(vid.currentTime||0);
+      tDur.textContent = isFinite(vid.duration) ? fmt(vid.duration) : '—';
+      updateSeekBar();
+      updateTimes();
+    });
+  });
+
+  function updateTimes(){
+    const cur = vid.currentTime||0;
+    const dur = isFinite(vid.duration) ? vid.duration : 0;
+    const r = vid.playbackRate || 1;
+    // Temps réels = temps "mur" à la vitesse sélectionnée
+    const realElapsedSec = cur / r;
+    const realRemainSec  = (dur - cur) / r;
+    realElapsed.textContent = fmt(realElapsedSec);
+    realRemain.textContent  = fmt(realRemainSec);
+  }
+
+  // Clavier global
+  window.addEventListener('keydown', (e)=>{
+    const tag = (e.target?.tagName || '').toLowerCase();
+    const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
+    // Espace → toggle (évite le scroll)
+    if (e.code === 'Space' && !typing){
+      e.preventDefault();
+      togglePlay();
+    }
+    // B → 2x
+    if (!typing && (e.key === 'b' || e.key === 'B')){
+      setRate(2.0);
+    }
+    // F → plein écran
+    if (!typing && (e.key === 'f' || e.key === 'F')){
+      toggleFullscreen();
+    }
+    // Flèches → seek fin
+    if (!typing && e.key === 'ArrowRight'){ vid.currentTime = Math.min((vid.duration||0), vid.currentTime + 5); }
+    if (!typing && e.key === 'ArrowLeft'){  vid.currentTime = Math.max(0, vid.currentTime - 5); }
+  });
+</script>
+</body>
+</html>
