@@ -5,102 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lecteur vidéo local</title>
 <style>
-  body {
-    background-color: #0f1221;
-    color: #e8eaf6;
-    font-family: system-ui, sans-serif;
-    margin: 0;
-    padding: 0;
+  :root { --bg:#0f1221; --card:#171a2c; --text:#e8eaf6; --muted:#a3acc5; --accent:#7aa2ff; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0f1221;color:var(--text)}
+  .wrap{max-width:900px;margin:24px auto;padding:16px}
+  .player{background:var(--card);border:1px solid #232640;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .video-area{position:relative;background:#000}
+  video{width:100%;display:block;aspect-ratio:16/9;background:#000}
+  .controls{display:flex;flex-direction:column;gap:10px;padding:12px}
+  .top-controls,.bottom-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  button,.file-label{
+    background:#212545;color:var(--text);border:1px solid #2a305a;padding:8px 12px;border-radius:8px;cursor:pointer;
+    transition:background .2s ease, transform .08s ease;
   }
-  .wrap {
-    max-width: 900px;
-    margin: 24px auto;
-    padding: 16px;
-  }
-  .player {
-    background: #171a2c;
-    border: 1px solid #232640;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  }
-  .video-area {
-    position: relative;
-    background: #000;
-  }
-  video {
-    width: 100%;
-    display: block;
-    aspect-ratio: 16/9;
-    background: #000;
-  }
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-  }
-  .top-controls, .bottom-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  button, .file-label {
-    background: #212545;
-    color: #e8eaf6;
-    border: 1px solid #2a305a;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.1s ease;
-  }
-  button:hover, .file-label:hover {
-    background: #2a305a;
-  }
-  input[type="file"] {
-    display: none;
-  }
-  .timebar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-  }
-  .time {
-    font-variant-numeric: tabular-nums;
-    color: #a3acc5;
-    min-width: 60px;
-    text-align: center;
-  }
-  input[type="range"] {
-    flex: 1;
-    appearance: none;
-    height: 8px;
-    background: #333a66;
-    border-radius: 5px;
-    outline: none;
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    background: #7aa2ff;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  .hint {
-    font-size: 14px;
-    color: #a3acc5;
-    margin-top: 8px;
-  }
-  .kbd {
-    background: #1f2444;
-    border: 1px solid #2c356a;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-weight: 700;
-  }
+  button:hover,.file-label:hover{background:#2a305a}
+  input[type="file"]{display:none}
+  .timebar{display:flex;align-items:center;gap:10px;width:100%}
+  .time{font-variant-numeric:tabular-nums;color:var(--muted);min-width:60px;text-align:center}
+  input[type="range"]{flex:1;appearance:none;height:8px;background:#333a66;border-radius:5px;outline:none}
+  input[type="range"]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
+  .hint{font-size:14px;color:var(--muted);margin-top:8px}
+  .kbd{background:#1f2444;border:1px solid #2c356a;padding:2px 6px;border-radius:6px;font-weight:700}
 </style>
 </head>
 <body>
@@ -109,23 +34,27 @@
 
   <div class="player">
     <div class="video-area" id="videoArea">
-      <video id="vid" preload="metadata" playsinline></video>
+      <!-- controls laissé activé pour faciliter le debug -->
+      <video id="vid" preload="metadata" playsinline controls></video>
     </div>
 
     <div class="controls">
       <div class="top-controls">
-        <label class="file-label">
+        <label class="file-label" title="Ouvrir un fichier vidéo local">
           <input id="file" type="file" accept="video/*">
           📂 Ouvrir une vidéo
         </label>
-        <button id="playBtn">▶️ Lecture</button>
-        <button id="rate08">0,8×</button>
-        <button id="rate10">1×</button>
-        <button id="rate20">2×</button>
-        <button id="fsBtn">⛶ Plein écran</button>
+        <button id="reloadBtn" title="Recharger la vidéo">🔁 Recharger</button>
+        <button id="playBtn" title="Lecture/Pause (Espace)">▶️ Lecture</button>
+
+        <button id="rate08" title="Vitesse 0,8×">0,8×</button>
+        <button id="rate10" title="Vitesse 1× (C)">1×</button>
+        <button id="rate20" title="Vitesse 2× (B)">2×</button>
+
+        <button id="fsBtn" title="Plein écran (F)">⛶ Plein écran</button>
       </div>
 
-      <div class="bottom-controls">
+      <div class="bottom-controls timebar">
         <span id="tCur" class="time">00:00</span>
         <input id="seek" type="range" min="0" max="1000" value="0">
         <span id="tDur" class="time">00:00</span>
@@ -138,93 +67,123 @@
     <span class="kbd">B</span> 2× ·
     <span class="kbd">N</span> 0,8× ·
     <span class="kbd">C</span> 1× ·
-    <span class="kbd">F</span> plein écran
+    <span class="kbd">F</span> plein écran ·
+    <span class="kbd">←/→</span> ±5s · Double-clic vidéo : plein écran.
   </p>
 </div>
 
 <script>
-const vid = document.getElementById('vid');
-const file = document.getElementById('file');
-const playBtn = document.getElementById('playBtn');
-const rate08 = document.getElementById('rate08');
-const rate10 = document.getElementById('rate10');
-const rate20 = document.getElementById('rate20');
-const fsBtn = document.getElementById('fsBtn');
-const seek = document.getElementById('seek');
-const tCur = document.getElementById('tCur');
-const tDur = document.getElementById('tDur');
-const videoArea = document.getElementById('videoArea');
+  // Références
+  const vid = document.getElementById('vid');
+  const file = document.getElementById('file');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const playBtn = document.getElementById('playBtn');
+  const rate08 = document.getElementById('rate08');
+  const rate10 = document.getElementById('rate10');
+  const rate20 = document.getElementById('rate20');
+  const fsBtn = document.getElementById('fsBtn');
+  const seek = document.getElementById('seek');
+  const tCur = document.getElementById('tCur');
+  const tDur = document.getElementById('tDur');
+  const videoArea = document.getElementById('videoArea');
 
-function fmt(s) {
-  if (!isFinite(s) || s < 0) s = 0;
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-}
-
-file.addEventListener('change', () => {
-  const f = file.files?.[0];
-  if (!f) return;
-  const url = URL.createObjectURL(f);
-  vid.src = url;
-  vid.playbackRate = 1.0;
-  vid.play().catch(()=>{});
-});
-
-playBtn.addEventListener('click', () => {
-  if (vid.paused) vid.play(); else vid.pause();
-});
-
-vid.addEventListener('play', ()=> playBtn.textContent = '⏸️ Pause');
-vid.addEventListener('pause', ()=> playBtn.textContent = '▶️ Lecture');
-
-rate08.addEventListener('click', ()=> setRate(0.8));
-rate10.addEventListener('click', ()=> setRate(1.0));
-rate20.addEventListener('click', ()=> setRate(2.0));
-
-fsBtn.addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    videoArea.requestFullscreen();
-  } else {
-    document.exitFullscreen();
+  // Format mm:ss
+  function fmt(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
   }
-});
 
-seek.addEventListener('input', ()=>{
-  if (vid.duration) {
-    vid.currentTime = (seek.value / 1000) * vid.duration;
+  // Charger un fichier local (PATCH: support même fichier + iOS/Safari)
+  file.addEventListener('change', () => {
+    const f = file.files?.[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+
+    vid.pause();
+    vid.removeAttribute('src'); // reset complet
+    vid.load();
+
+    vid.src = url;
+    vid.playbackRate = 1.0;
+    vid.load();                // indispensable pour iOS/Safari
+    vid.play().catch(()=>{ /* l'utilisateur peut cliquer Play */ });
+
+    // Permet de re-sélectionner le même fichier ensuite
+    file.value = '';
+  });
+
+  // Bouton Recharger (recharge la même src)
+  reloadBtn.addEventListener('click', () => {
+    if (!vid.src) return;
+    const current = vid.src;
+    vid.pause();
+    vid.removeAttribute('src');
+    vid.load();
+    vid.src = current;
+    vid.load();
+    vid.play().catch(()=>{});
+  });
+
+  // Lecture/Pause
+  playBtn.addEventListener('click', () => {
+    if (vid.paused) vid.play(); else vid.pause();
+  });
+  vid.addEventListener('play',  ()=> playBtn.textContent = '⏸️ Pause');
+  vid.addEventListener('pause', ()=> playBtn.textContent = '▶️ Lecture');
+
+  // Vitesse
+  function setRate(r){ vid.playbackRate = r; }
+  rate08.addEventListener('click', ()=> setRate(0.8));
+  rate10.addEventListener('click', ()=> setRate(1.0));
+  rate20.addEventListener('click', ()=> setRate(2.0));
+
+  // Plein écran
+  function toggleFullscreen(){
+    if (!document.fullscreenElement) videoArea.requestFullscreen?.();
+    else document.exitFullscreen?.();
   }
-});
+  fsBtn.addEventListener('click', toggleFullscreen);
+  vid.addEventListener('dblclick', toggleFullscreen);
 
-vid.addEventListener('timeupdate', ()=>{
-  if (vid.duration) {
+  // Seek
+  seek.addEventListener('input', ()=>{
+    if (vid.duration) vid.currentTime = (seek.value / 1000) * vid.duration;
+  });
+  vid.addEventListener('timeupdate', ()=>{
+    if (!vid.duration) return;
     seek.value = Math.round((vid.currentTime / vid.duration) * 1000);
     tCur.textContent = fmt(vid.currentTime);
     tDur.textContent = fmt(vid.duration);
-  }
-});
+  });
+  vid.addEventListener('loadedmetadata', ()=>{
+    tDur.textContent = fmt(vid.duration || 0);
+  });
 
-function setRate(r){
-  vid.playbackRate = r;
-}
+  // Alerte si codec non supporté
+  vid.addEventListener('error', () => {
+    alert("La vidéo n'a pas pu être lue. Essaie un fichier .mp4 (H.264 + AAC).");
+  });
 
-// raccourcis clavier
-window.addEventListener('keydown', (e) => {
-  const tag = (e.target?.tagName || '').toLowerCase();
-  const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
+  // Raccourcis clavier
+  window.addEventListener('keydown', (e) => {
+    const tag = (e.target?.tagName || '').toLowerCase();
+    const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
 
-  if (!typing && e.code === 'Space') {
-    e.preventDefault();
-    if (vid.paused) vid.play(); else vid.pause();
-  }
-  if (!typing && (e.key === 'b' || e.key === 'B')) setRate(2.0);
-  if (!typing && (e.key === 'n' || e.key === 'N')) setRate(0.8);
-  if (!typing && (e.key === 'c' || e.key === 'C')) setRate(1.0);
-  if (!typing && (e.key === 'f' || e.key === 'F')) {
-    if (!document.fullscreenElement) videoArea.requestFullscreen();
-    else document.exitFullscreen();
-  }
-});
+    if (!typing && e.code === 'Space') { // Espace → play/pause
+      e.preventDefault();
+      if (vid.paused) vid.play(); else vid.pause();
+    }
+    if (!typing && (e.key === 'b' || e.key === 'B')) setRate(2.0);   // B → 2x
+    if (!typing && (e.key === 'n' || e.key === 'N')) setRate(0.8);   // N → 0.8x
+    if (!typing && (e.key === 'c' || e.key === 'C')) setRate(1.0);   // C → 1x
+    if (!typing && (e.key === 'f' || e.key === 'F')) toggleFullscreen(); // F → FS
+    if (!typing && e.key === 'ArrowRight') vid.currentTime = Math.min((vid.duration||0), vid.currentTime + 5);
+    if (!typing && e.key === 'ArrowLeft')  vid.currentTime = Math.max(0, vid.currentTime - 5);
+  });
 </script>
 </body>
 </html>
+
+
