@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lecteur vidéo local</title>
 <style>
-  :root { --bg:#0f1221; --card:#171a2c; --text:#e8eaf6; --muted:#a3acc5; --accent:#7aa2ff; }
+  :root { --bg:#0f1221; --card:#171a2c; --text:#e8eaf6; --muted:#a3acc5; --accent:#7aa2ff; --ok:#9ae6b4; --bad:#ff6b6b; }
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0f1221;color:var(--text)}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
   .wrap{max-width:900px;margin:24px auto;padding:16px}
   .player{background:var(--card);border:1px solid #232640;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
   .video-area{position:relative;background:#000}
   video{width:100%;display:block;aspect-ratio:16/9;background:#000}
   .controls{display:flex;flex-direction:column;gap:10px;padding:12px}
-  .top-controls,.bottom-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   button,.file-label{
     background:#212545;color:var(--text);border:1px solid #2a305a;padding:8px 12px;border-radius:8px;cursor:pointer;
     transition:background .2s ease, transform .08s ease;
@@ -26,6 +26,9 @@
   input[type="range"]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
   .hint{font-size:14px;color:var(--muted);margin-top:8px}
   .kbd{background:#1f2444;border:1px solid #2c356a;padding:2px 6px;border-radius:6px;font-weight:700}
+  .status{margin-top:8px;font-size:14px;color:var(--muted)}
+  .status.ok{color:var(--ok)}
+  .status.bad{color:var(--bad)}
 </style>
 </head>
 <body>
@@ -34,12 +37,12 @@
 
   <div class="player">
     <div class="video-area" id="videoArea">
-      <!-- controls laissé activé pour faciliter le debug -->
+      <!-- controls activés pour que tu puisses cliquer ▶️ si l’autoplay est bloqué -->
       <video id="vid" preload="metadata" playsinline controls></video>
     </div>
 
     <div class="controls">
-      <div class="top-controls">
+      <div class="row">
         <label class="file-label" title="Ouvrir un fichier vidéo local">
           <input id="file" type="file" accept="video/*">
           📂 Ouvrir une vidéo
@@ -54,11 +57,13 @@
         <button id="fsBtn" title="Plein écran (F)">⛶ Plein écran</button>
       </div>
 
-      <div class="bottom-controls timebar">
+      <div class="row timebar">
         <span id="tCur" class="time">00:00</span>
         <input id="seek" type="range" min="0" max="1000" value="0">
         <span id="tDur" class="time">00:00</span>
       </div>
+
+      <div id="status" class="status">Prêt.</div>
     </div>
   </div>
 
@@ -86,8 +91,16 @@
   const tCur = document.getElementById('tCur');
   const tDur = document.getElementById('tDur');
   const videoArea = document.getElementById('videoArea');
+  const statusEl = document.getElementById('status');
 
-  // Format mm:ss
+  let lastBlobUrl = null;
+
+  function setStatus(msg, cls='') {
+    statusEl.className = 'status ' + cls;
+    statusEl.textContent = msg;
+    console.log('[lecteur]', msg);
+  }
+
   function fmt(s) {
     if (!isFinite(s) || s < 0) s = 0;
     const m = Math.floor(s / 60);
@@ -95,46 +108,77 @@
     return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
   }
 
-  // Charger un fichier local (PATCH: support même fichier + iOS/Safari)
+  function safeLoadPlay() {
+    // Certaines plateformes exigent muted pour l’autoplay
+    vid.muted = true;
+    vid.load();
+    // On essaye de lancer; sinon l’utilisateur cliquera ▶️
+    vid.play().then(()=>{
+      setStatus('Lecture démarrée.', 'ok');
+    }).catch(err=>{
+      setStatus('Fichier chargé. Clique sur ▶️ pour lancer (autoplay bloqué).', '');
+      console.debug(err);
+    });
+  }
+
+  // Charger un fichier local (robuste : même fichier + reset + iOS/Safari)
   file.addEventListener('change', () => {
     const f = file.files?.[0];
     if (!f) return;
-    const url = URL.createObjectURL(f);
 
+    // Alerte basique si le type ressemble à un format peu supporté
+    if (!f.type || (!f.type.includes('mp4') && !f.type.includes('quicktime') && !f.type.includes('webm'))) {
+      setStatus(`Type de fichier détecté : "${f.type || 'inconnu'}". Essaye idéalement un .mp4 (H.264 + AAC).`);
+    } else {
+      setStatus(`Chargement du fichier : ${f.name} …`);
+    }
+
+    // Nettoyer l’ancienne URL pour éviter les fuites
+    if (lastBlobUrl) {
+      URL.revokeObjectURL(lastBlobUrl);
+      lastBlobUrl = null;
+    }
+
+    const url = URL.createObjectURL(f);
+    lastBlobUrl = url;
+
+    // Reset complet de la vidéo
     vid.pause();
-    vid.removeAttribute('src'); // reset complet
+    vid.removeAttribute('src');
     vid.load();
 
+    // Nouvelle source
     vid.src = url;
     vid.playbackRate = 1.0;
-    vid.load();                // indispensable pour iOS/Safari
-    vid.play().catch(()=>{ /* l'utilisateur peut cliquer Play */ });
 
-    // Permet de re-sélectionner le même fichier ensuite
+    safeLoadPlay();
+
+    // Permet de re-sélectionner exactement le même fichier ensuite
     file.value = '';
   });
 
   // Bouton Recharger (recharge la même src)
   reloadBtn.addEventListener('click', () => {
     if (!vid.src) return;
+    setStatus('Rechargement de la vidéo…');
     const current = vid.src;
     vid.pause();
     vid.removeAttribute('src');
     vid.load();
     vid.src = current;
-    vid.load();
-    vid.play().catch(()=>{});
+    safeLoadPlay();
   });
 
   // Lecture/Pause
   playBtn.addEventListener('click', () => {
-    if (vid.paused) vid.play(); else vid.pause();
+    if (vid.paused) { vid.play(); setStatus('Lecture.', 'ok'); }
+    else { vid.pause(); setStatus('Pause.'); }
   });
   vid.addEventListener('play',  ()=> playBtn.textContent = '⏸️ Pause');
   vid.addEventListener('pause', ()=> playBtn.textContent = '▶️ Lecture');
 
   // Vitesse
-  function setRate(r){ vid.playbackRate = r; }
+  function setRate(r){ vid.playbackRate = r; setStatus(`Vitesse : ${r}×`); }
   rate08.addEventListener('click', ()=> setRate(0.8));
   rate10.addEventListener('click', ()=> setRate(1.0));
   rate20.addEventListener('click', ()=> setRate(2.0));
@@ -149,7 +193,10 @@
 
   // Seek
   seek.addEventListener('input', ()=>{
-    if (vid.duration) vid.currentTime = (seek.value / 1000) * vid.duration;
+    if (vid.duration) {
+      vid.currentTime = (seek.value / 1000) * vid.duration;
+      setStatus(`Position : ${fmt(vid.currentTime)} / ${fmt(vid.duration)}`);
+    }
   });
   vid.addEventListener('timeupdate', ()=>{
     if (!vid.duration) return;
@@ -159,11 +206,24 @@
   });
   vid.addEventListener('loadedmetadata', ()=>{
     tDur.textContent = fmt(vid.duration || 0);
+    setStatus('Métadonnées chargées (durée détectée).', 'ok');
   });
+  vid.addEventListener('canplay', ()=> setStatus('Décodage OK (canplay).', 'ok'));
+  vid.addEventListener('canplaythrough', ()=> setStatus('Lecture fluide possible (canplaythrough).', 'ok'));
 
-  // Alerte si codec non supporté
+  // Erreurs de lecture (codec, DRM, etc.)
   vid.addEventListener('error', () => {
-    alert("La vidéo n'a pas pu être lue. Essaie un fichier .mp4 (H.264 + AAC).");
+    const err = vid.error;
+    let msg = "La vidéo n'a pas pu être lue.";
+    if (err) {
+      // Codes HTMLMediaError: 1=aborted, 2=network, 3=decode, 4=src not supported
+      msg += ` (code ${err.code})`;
+      if (err.code === 3 || err.code === 4) {
+        msg += " — Probable codec non supporté. Utilise de préférence un .mp4 (H.264 + AAC).";
+      }
+    }
+    setStatus(msg, 'bad');
+    alert(msg);
   });
 
   // Raccourcis clavier
@@ -173,7 +233,8 @@
 
     if (!typing && e.code === 'Space') { // Espace → play/pause
       e.preventDefault();
-      if (vid.paused) vid.play(); else vid.pause();
+      if (vid.paused) { vid.play(); setStatus('Lecture.', 'ok'); }
+      else { vid.pause(); setStatus('Pause.'); }
     }
     if (!typing && (e.key === 'b' || e.key === 'B')) setRate(2.0);   // B → 2x
     if (!typing && (e.key === 'n' || e.key === 'N')) setRate(0.8);   // N → 0.8x
@@ -185,5 +246,3 @@
 </script>
 </body>
 </html>
-
-
