@@ -5,32 +5,100 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lecteur vidéo local</title>
 <style>
-  :root { --bg:#0f1221; --card:#171a2c; --text:#e8eaf6; --muted:#a3acc5; --accent:#7aa2ff; --ok:#9ae6b4; --bad:#ff6b6b; }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  .wrap{max-width:900px;margin:24px auto;padding:16px}
-  .player{background:var(--card);border:1px solid #232640;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .video-area{position:relative;background:#000}
-  video{width:100%;display:block;aspect-ratio:16/9;background:#000}
-  .controls{display:flex;flex-direction:column;gap:10px;padding:12px}
-  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  button,.file-label{
-    background:#212545;color:var(--text);border:1px solid #2a305a;padding:8px 12px;border-radius:8px;cursor:pointer;
-    transition:background .2s ease, transform .08s ease;
+  body {
+    background-color: #0f1221;
+    color: #e8eaf6;
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
   }
-  button:hover,.file-label:hover{background:#2a305a}
-  input[type="file"]{display:none}
-  .timebar{display:flex;align-items:center;gap:10px;width:100%}
-  .time{font-variant-numeric:tabular-nums;color:var(--muted);min-width:60px;text-align:center}
-  input[type="range"]{flex:1;appearance:none;height:8px;background:#333a66;border-radius:5px;outline:none}
-  input[type="range"]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
-  .hint{font-size:14px;color:var(--muted);margin-top:8px}
-  .kbd{background:#1f2444;border:1px solid #2c356a;padding:2px 6px;border-radius:6px;font-weight:700}
-  .status{margin-top:4px;font-size:14px;color:var(--muted)}
-  .status.ok{color:var(--ok)}
-  .status.bad{color:var(--bad)}
-  .pill{background:#1c2040;border:1px solid #2a305a;border-radius:999px;padding:6px 10px;color:var(--muted)}
-  .value{color:var(--ok);font-variant-numeric:tabular-nums;font-weight:700}
+  .wrap {
+    max-width: 900px;
+    margin: 24px auto;
+    padding: 16px;
+  }
+  .player {
+    background: #171a2c;
+    border: 1px solid #232640;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .video-area {
+    position: relative;
+    background: #000;
+  }
+  video {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16/9;
+    background: #000;
+  }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+  .top-controls, .bottom-controls, .extra-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  button, .file-label {
+    background: #212545;
+    color: #e8eaf6;
+    border: 1px solid #2a305a;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+  }
+  button:hover, .file-label:hover { background: #2a305a; }
+  input[type="file"] { display: none; }
+  .timebar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .time {
+    font-variant-numeric: tabular-nums;
+    color: #a3acc5;
+    min-width: 60px;
+    text-align: center;
+  }
+  input[type="range"] {
+    flex: 1;
+    appearance: none;
+    height: 8px;
+    background: #333a66;
+    border-radius: 5px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #7aa2ff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .hint {
+    font-size: 14px;
+    color: #a3acc5;
+    margin-top: 8px;
+  }
+  .kbd {
+    background: #1f2444;
+    border: 1px solid #2c356a;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+  .pill { background:#1c2040; border:1px solid #2a305a; border-radius:999px; padding:6px 10px; color:#a3acc5; }
+  .value { color:#9ae6b4; font-variant-numeric: tabular-nums; font-weight:700; }
 </style>
 </head>
 <body>
@@ -39,39 +107,34 @@
 
   <div class="player">
     <div class="video-area" id="videoArea">
-      <video id="vid" preload="metadata" playsinline controls></video>
+      <video id="vid" preload="metadata" playsinline></video>
     </div>
 
     <div class="controls">
-      <div class="row">
-        <label class="file-label" title="Ouvrir un fichier vidéo local">
+      <div class="top-controls">
+        <label class="file-label">
           <input id="file" type="file" accept="video/*">
           📂 Ouvrir une vidéo
         </label>
-        <button id="reloadBtn" title="Recharger la vidéo">🔁 Recharger</button>
-        <button id="playBtn" title="Lecture/Pause (Espace)">▶️ Lecture</button>
-
-        <button id="rate08" title="Vitesse 0,8×">0,8×</button>
-        <button id="rate10" title="Vitesse 1× (C)">1×</button>
-        <button id="rate20" title="Vitesse 2× (B)">2×</button>
-
-        <button id="fsBtn" title="Plein écran (F)">⛶ Plein écran</button>
+        <button id="playBtn">▶️ Lecture</button>
+        <button id="rate08">0,8×</button>
+        <button id="rate10">1×</button>
+        <button id="rate20">2×</button>
+        <button id="fsBtn">⛶ Plein écran</button>
       </div>
 
-      <div class="row timebar">
+      <div class="bottom-controls timebar">
         <span id="tCur" class="time">00:00</span>
         <input id="seek" type="range" min="0" max="1000" value="0">
         <span id="tDur" class="time">00:00</span>
       </div>
 
-      <!-- NOUVELLE LIGNE : affichage du temps réel et de la vitesse -->
-      <div class="row">
-        <span class="pill">Vitesse : <span id="rateLabel" class="value">1,00×</span></span>
-        <span class="pill">Écoulé (réel) : <span id="realElapsed" class="value">00:00</span></span>
-        <span class="pill">Restant (réel) : <span id="realRemain" class="value">00:00</span></span>
+      <!-- Ajout : temps restant réel -->
+      <div class="extra-row">
+        <span class="pill">Temps restant (réel) :
+          <span id="realRemain" class="value">00:00</span>
+        </span>
       </div>
-
-      <div id="status" class="status">Prêt.</div>
     </div>
   </div>
 
@@ -81,182 +144,123 @@
     <span class="kbd">N</span> 0,8× ·
     <span class="kbd">C</span> 1× ·
     <span class="kbd">F</span> plein écran ·
-    <span class="kbd">←/→</span> ±5s · Double-clic vidéo : plein écran.
+    <span class="kbd">←/→</span> ±5s
   </p>
 </div>
 
 <script>
-  // Références
-  const vid = document.getElementById('vid');
-  const file = document.getElementById('file');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const playBtn = document.getElementById('playBtn');
-  const rate08 = document.getElementById('rate08');
-  const rate10 = document.getElementById('rate10');
-  const rate20 = document.getElementById('rate20');
-  const fsBtn = document.getElementById('fsBtn');
-  const seek = document.getElementById('seek');
-  const tCur = document.getElementById('tCur');
-  const tDur = document.getElementById('tDur');
-  const videoArea = document.getElementById('videoArea');
-  const statusEl = document.getElementById('status');
+const vid = document.getElementById('vid');
+const file = document.getElementById('file');
+const playBtn = document.getElementById('playBtn');
+const rate08 = document.getElementById('rate08');
+const rate10 = document.getElementById('rate10');
+const rate20 = document.getElementById('rate20');
+const fsBtn = document.getElementById('fsBtn');
+const seek = document.getElementById('seek');
+const tCur = document.getElementById('tCur');
+const tDur = document.getElementById('tDur');
+const videoArea = document.getElementById('videoArea');
+const realRemainEl = document.getElementById('realRemain');
 
-  // nouveaux pour temps réel
-  const rateLabel = document.getElementById('rateLabel');
-  const realElapsed = document.getElementById('realElapsed');
-  const realRemain  = document.getElementById('realRemain');
+function fmt(s) {
+  if (!isFinite(s) || s < 0) s = 0;
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = Math.floor(s%60);
+  const mm = m.toString().padStart(2,'0');
+  const ss = sec.toString().padStart(2,'0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
 
-  let lastBlobUrl = null;
+function updateRealRemain(){
+  const r = vid.playbackRate || 1;
+  const cur = vid.currentTime || 0;
+  const dur = isFinite(vid.duration) ? vid.duration : 0;
+  const remainReal = (dur - cur) / r;   // temps “mur” restant à la vitesse choisie
+  if (realRemainEl) realRemainEl.textContent = fmt(remainReal);
+}
 
-  function setStatus(msg, cls='') {
-    statusEl.className = 'status ' + cls;
-    statusEl.textContent = msg;
-    console.log('[lecteur]', msg);
+// — Chargement d’un fichier (simple et fiable)
+file.addEventListener('change', () => {
+  const f = file.files?.[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+
+  // reset propre (évite l’écran noir sur certains navigateurs)
+  vid.pause();
+  vid.removeAttribute('src');
+  vid.load();
+
+  vid.src = url;
+  vid.playbackRate = 1.0;
+  vid.load();                 // utile pour Safari/iOS
+  vid.play().catch(()=>{});   // l’utilisateur peut cliquer ▶️ si l’autoplay est bloqué
+
+  file.value = '';            // permet de re-choisir le même fichier plus tard
+  updateRealRemain();
+});
+
+// Lecture/Pause
+playBtn.addEventListener('click', () => {
+  if (vid.paused) vid.play(); else vid.pause();
+});
+vid.addEventListener('play', ()=> playBtn.textContent = '⏸️ Pause');
+vid.addEventListener('pause',()=> playBtn.textContent = '▶️ Lecture');
+
+// Vitesse
+function setRate(r){
+  vid.playbackRate = r;
+  updateRealRemain();
+}
+rate08.addEventListener('click', ()=> setRate(0.8));
+rate10.addEventListener('click', ()=> setRate(1.0));
+rate20.addEventListener('click', ()=> setRate(2.0));
+
+// Plein écran
+fsBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) videoArea.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+
+// Barre de progression + temps
+seek.addEventListener('input', ()=>{
+  if (vid.duration) {
+    vid.currentTime = (seek.value / 1000) * vid.duration;
+    updateRealRemain();
   }
-
-  function fmt(s) {
-    if (!isFinite(s) || s < 0) s = 0;
-    const h = Math.floor(s/3600);
-    const m = Math.floor((s%3600)/60);
-    const sec = Math.floor(s%60);
-    const mm = m.toString().padStart(2,'0');
-    const ss = sec.toString().padStart(2,'0');
-    return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-  }
-
-  function updateRealTimes(){
-    const r = vid.playbackRate || 1;
-    const cur = vid.currentTime || 0;
-    const dur = isFinite(vid.duration) ? vid.duration : 0;
-    realElapsed.textContent = fmt(cur / r);
-    realRemain.textContent  = fmt((dur - cur) / r);
-    rateLabel.textContent   = r.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '×';
-  }
-
-  function safeLoadPlay() {
-    vid.muted = true; // facilite l’autoplay
-    vid.load();
-    vid.play().then(()=>{
-      setStatus('Lecture démarrée.', 'ok');
-    }).catch(()=>{
-      setStatus('Fichier chargé. Clique sur ▶️ pour lancer (autoplay bloqué).');
-    });
-  }
-
-  // Charger un fichier local (robuste)
-  file.addEventListener('change', () => {
-    const f = file.files?.[0];
-    if (!f) return;
-
-    if (lastBlobUrl) { URL.revokeObjectURL(lastBlobUrl); lastBlobUrl = null; }
-    const url = URL.createObjectURL(f); lastBlobUrl = url;
-
-    vid.pause();
-    vid.removeAttribute('src');
-    vid.load();
-
-    vid.src = url;
-    vid.playbackRate = 1.0;
-    updateRealTimes();
-    safeLoadPlay();
-
-    file.value = ''; // re-sélection du même fichier possible
-  });
-
-  // Bouton Recharger
-  reloadBtn.addEventListener('click', () => {
-    if (!vid.src) return;
-    setStatus('Rechargement de la vidéo…');
-    const current = vid.src;
-    vid.pause();
-    vid.removeAttribute('src');
-    vid.load();
-    vid.src = current;
-    safeLoadPlay();
-  });
-
-  // Lecture/Pause
-  playBtn.addEventListener('click', () => {
-    if (vid.paused) { vid.play(); setStatus('Lecture.', 'ok'); }
-    else { vid.pause(); setStatus('Pause.'); }
-  });
-  vid.addEventListener('play',  ()=> playBtn.textContent = '⏸️ Pause');
-  vid.addEventListener('pause', ()=> playBtn.textContent = '▶️ Lecture');
-
-  // Vitesse
-  function setRate(r){
-    vid.playbackRate = r;
-    updateRealTimes();
-    setStatus(`Vitesse : ${r}×`);
-  }
-  rate08.addEventListener('click', ()=> setRate(0.8));
-  rate10.addEventListener('click', ()=> setRate(1.0));
-  rate20.addEventListener('click', ()=> setRate(2.0));
-
-  // Plein écran
-  function toggleFullscreen(){
-    if (!document.fullscreenElement) videoArea.requestFullscreen?.();
-    else document.exitFullscreen?.();
-  }
-  fsBtn.addEventListener('click', toggleFullscreen);
-  vid.addEventListener('dblclick', toggleFullscreen);
-
-  // Seek + mises à jour d’affichage
-  seek.addEventListener('input', ()=>{
-    if (vid.duration) {
-      vid.currentTime = (seek.value / 1000) * vid.duration;
-      setStatus(`Position : ${fmt(vid.currentTime)} / ${fmt(vid.duration)}`);
-      updateRealTimes();
-    }
-  });
-  vid.addEventListener('timeupdate', ()=>{
-    if (!vid.duration) return;
+});
+vid.addEventListener('timeupdate', ()=>{
+  if (vid.duration) {
     seek.value = Math.round((vid.currentTime / vid.duration) * 1000);
     tCur.textContent = fmt(vid.currentTime);
     tDur.textContent = fmt(vid.duration);
-    updateRealTimes();
-  });
-  vid.addEventListener('loadedmetadata', ()=>{
-    tDur.textContent = fmt(vid.duration || 0);
-    updateRealTimes();
-    setStatus('Métadonnées chargées (durée détectée).', 'ok');
-  });
-  vid.addEventListener('canplay', ()=> setStatus('Décodage OK (canplay).', 'ok'));
-  vid.addEventListener('canplaythrough', ()=> setStatus('Lecture fluide possible (canplaythrough).', 'ok'));
+    updateRealRemain();
+  }
+});
+vid.addEventListener('loadedmetadata', ()=>{
+  tDur.textContent = fmt(vid.duration || 0);
+  updateRealRemain();
+});
 
-  // Erreurs de lecture
-  vid.addEventListener('error', () => {
-    const err = vid.error;
-    let msg = "La vidéo n'a pas pu être lue.";
-    if (err) {
-      msg += ` (code ${err.code})`;
-      if (err.code === 3 || err.code === 4) {
-        msg += " — Probable codec non supporté. Utilise plutôt un .mp4 (H.264 + AAC).";
-      }
-    }
-    setStatus(msg, 'bad');
-    alert(msg);
-  });
+// Raccourcis clavier
+window.addEventListener('keydown', (e) => {
+  const tag = (e.target?.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
 
-  // Raccourcis clavier
-  window.addEventListener('keydown', (e) => {
-    const tag = (e.target?.tagName || '').toLowerCase();
-    const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
-
-    if (!typing && e.code === 'Space') {
-      e.preventDefault();
-      if (vid.paused) { vid.play(); setStatus('Lecture.', 'ok'); }
-      else { vid.pause(); setStatus('Pause.'); }
-    }
-    if (!typing && (e.key === 'b' || e.key === 'B')) setRate(2.0);
-    if (!typing && (e.key === 'n' || e.key === 'N')) setRate(0.8);
-    if (!typing && (e.key === 'c' || e.key === 'C')) setRate(1.0);
-    if (!typing && (e.key === 'f' || e.key === 'F')) toggleFullscreen();
-    if (!typing && e.key === 'ArrowRight') { vid.currentTime = Math.min((vid.duration||0), vid.currentTime + 5); updateRealTimes(); }
-    if (!typing && e.key === 'ArrowLeft')  { vid.currentTime = Math.max(0, vid.currentTime - 5); updateRealTimes(); }
-  });
+  if (!typing && e.code === 'Space') {
+    e.preventDefault();
+    if (vid.paused) vid.play(); else vid.pause();
+  }
+  if (!typing && (e.key === 'b' || e.key === 'B')) setRate(2.0);
+  if (!typing && (e.key === 'n' || e.key === 'N')) setRate(0.8);
+  if (!typing && (e.key === 'c' || e.key === 'C')) setRate(1.0);
+  if (!typing && (e.key === 'f' || e.key === 'F')) {
+    if (!document.fullscreenElement) videoArea.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+  if (!typing && e.key === 'ArrowRight') { vid.currentTime = Math.min((vid.duration||0), vid.currentTime + 5); updateRealRemain(); }
+  if (!typing && e.key === 'ArrowLeft')  { vid.currentTime = Math.max(0, vid.currentTime - 5); updateRealRemain(); }
+});
 </script>
 </body>
 </html>
-
-
