@@ -224,39 +224,42 @@
     realElapsed.textContent = fmt(realElapsedSec);
     realRemain.textContent  = fmt(realRemainSec);
   }
+// Clavier global
+window.addEventListener('keydown', (e) => {
+  const tag = (e.target?.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
 
-  // Clavier global
-  window.addEventListener('keydown', (e)=>{
-    const tag = (e.target?.tagName || '').toLowerCase();
-    const typing = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
-    // Espace → toggle (évite le scroll)
-    if (e.code === 'Space' && !typing){
-      e.preventDefault();
-      togglePlay();
-    }
-    // B → 2x
-    if (!typing && (e.key === 'b' || e.key === 'B')){
-      setRate(2.0);
-        // N → 0.8x
-    if (!typing && (e.key === 'n' || e.key === 'N')){
+  // Espace → lecture/pause (évite le scroll)
+  if (!typing && e.code === 'Space') {
+    e.preventDefault();
+    togglePlay();
+  }
+
+  // B → 2x
+  if (!typing && (e.key === 'b' || e.key === 'B')) {
+    setRate(2.0);
+  }
+
+  // N → 0.8x
+  if (!typing && (e.key === 'n' || e.key === 'N')) {
     setRate(0.8);
-     }
+  }
 
   // C → 1x
-  if (!typing && (e.key === 'c' || e.key === 'C')){
+  if (!typing && (e.key === 'c' || e.key === 'C')) {
     setRate(1.0);
   }
 
-    }
-    // F → plein écran
-    if (!typing && (e.key === 'f' || e.key === 'F')){
-      toggleFullscreen();
-    }
-    // Flèches → seek fin
-    if (!typing && e.key === 'ArrowRight'){ vid.currentTime = Math.min((vid.duration||0), vid.currentTime + 5); }
-    if (!typing && e.key === 'ArrowLeft'){  vid.currentTime = Math.max(0, vid.currentTime - 5); }
-  });
-</script>
-</body>
-</html>
+  // F → plein écran
+  if (!typing && (e.key === 'f' || e.key === 'F')) {
+    toggleFullscreen();
+  }
 
+  // Flèches → ±5s
+  if (!typing && e.key === 'ArrowRight') {
+    vid.currentTime = Math.min((vid.duration || 0), vid.currentTime + 5);
+  }
+  if (!typing && e.key === 'ArrowLeft') {
+    vid.currentTime = Math.max(0, vid.currentTime - 5);
+  }
+});
