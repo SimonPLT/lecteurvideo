@@ -92,6 +92,15 @@
       <div class="row">
         <span class="pill">Temps restant (réel) : <span id="realRemain" class="value">00:00</span></span>
       </div>
+
+      <!-- AJOUT : Volume + Vitesse précise -->
+      <div class="row">
+        <span class="pill">Volume : <span id="volLabel" class="value">100%</span></span>
+        <input id="vol" type="range" min="0" max="1" step="0.01" value="1">
+        <span class="pill">Vitesse précise : <span id="rateDisplay" class="value">1,00×</span></span>
+        <input id="rateSlider" type="range" min="0.07" max="3" step="0.01" value="1">
+      </div>
+      <!-- FIN AJOUT -->
     </div>
   </div>
 
@@ -119,6 +128,12 @@
   const tDur = document.getElementById('tDur');
   const videoArea = document.getElementById('videoArea');
   const realRemainEl = document.getElementById('realRemain');
+
+  // AJOUT : Volume + Vitesse précise
+  const vol = document.getElementById('vol');
+  const volLabel = document.getElementById('volLabel');
+  const rateSlider = document.getElementById('rateSlider');
+  const rateDisplay = document.getElementById('rateDisplay');
 
   // HUD FS
   const fsHud = document.getElementById('fsHud');
@@ -178,6 +193,7 @@
 
     file.value = '';
     updateRealRemain();
+    updateRateDisplay();
   });
 
   // Lecture/Pause
@@ -185,8 +201,14 @@
   vid.addEventListener('play', ()=> playBtn.textContent = '⏸️ Pause');
   vid.addEventListener('pause',()=> playBtn.textContent = '▶️ Lecture');
 
-  // Vitesse
-  function setRate(r){ vid.playbackRate = r; updateRealRemain(); }
+  // Vitesse (boutons)
+  function setRate(r){
+    const val = Math.max(0.07, Math.min(16, r));
+    vid.playbackRate = val;
+    if (rateSlider) rateSlider.value = String(val); // sync slider
+    updateRateDisplay();
+    updateRealRemain();
+  }
   rate08.addEventListener('click', ()=> setRate(0.8));
   rate10.addEventListener('click', ()=> setRate(1.0));
   rate20.addEventListener('click', ()=> setRate(2.0));
@@ -245,6 +267,41 @@
     else { clearTimeout(fsHideTimer); fsHud.hidden = true; fsHud.classList.remove('hidden'); }
   });
   videoArea.addEventListener('mousemove', () => { if (isFullscreen()) showFsHud(); });
+
+  /* ===== AJOUT : logique Volume + Vitesse précise (sliders) ===== */
+  // Volume
+  function updateVolLabel(){ volLabel.textContent = `${Math.round((vid.volume||0)*100)}%`; }
+  if (vol){
+    vid.volume = Number(vol.value);
+    updateVolLabel();
+    vol.addEventListener('input', () => {
+      vid.volume = Number(vol.value);
+      updateVolLabel();
+    });
+  }
+
+  // Vitesse précise
+  function updateRateDisplay(){
+    const r = vid.playbackRate || 1;
+    rateDisplay.textContent = r.toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2}) + '×';
+  }
+  if (rateSlider){
+    rateSlider.value = "1";
+    updateRateDisplay();
+    rateSlider.addEventListener('input', () => {
+      setRate(parseFloat(rateSlider.value));
+    });
+  }
+
+  // Si la vitesse change autrement (boutons / clavier / navigateur)
+  vid.addEventListener('ratechange', () => {
+    if (rateSlider) rateSlider.value = String(vid.playbackRate);
+    updateRateDisplay();
+    updateRealRemain();
+  });
+  /* ===== FIN AJOUT ===== */
 </script>
 </body>
 </html>
+
+
